@@ -1,0 +1,92 @@
+import React, { useState } from 'react';
+import { type Book } from '../api/book';
+
+interface EditBookModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onEdit: (id: number, data: FormData) => Promise<{ success: boolean }>; 
+  isUpdating: boolean;
+  bookToEdit: Book | null;
+}
+
+export default function EditBookModal({ isOpen, onClose, onEdit, isUpdating, bookToEdit }: EditBookModalProps) {
+  const [title, setTitle] = useState(bookToEdit?.title || '');
+  const [author, setAuthor] = useState(bookToEdit?.author || '');
+  const [level, setLevel] = useState(bookToEdit?.level || 'Beginner');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  if (!isOpen || !bookToEdit) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('author', author);
+    formData.append('level', level);
+
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+
+    const result = await onEdit(bookToEdit.id, formData);
+    if (result.success) onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
+        
+        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+          <h2 className="text-xl font-bold text-gray-800">Edit Book</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} className="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
+            <input type="text" required value={author} onChange={(e) => setAuthor(e.target.value)} className="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
+            <select value={level} onChange={(e) => setLevel(e.target.value)} className="w-full border border-gray-300 rounded p-2 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Update Cover Image (Optional)</label>
+            {bookToEdit.image_url && !imageFile && (
+               <p className="text-xs text-gray-500 mb-2">Current image will be kept unless a new one is uploaded.</p>
+            )}
+            <input 
+              type="file" 
+              accept="image/*"
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  setImageFile(e.target.files[0]);
+                }
+              }} 
+              className="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-500 outline-none file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer text-sm" 
+            />
+          </div>
+
+          <div className="mt-4 flex justify-end gap-3">
+            <button type="button" onClick={onClose} disabled={isUpdating} className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded transition">Cancel</button>
+            <button type="submit" disabled={isUpdating} className="bg-blue-600 text-white px-4 py-2 rounded font-medium hover:bg-blue-700 transition disabled:bg-blue-300">
+              {isUpdating ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
